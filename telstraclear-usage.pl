@@ -94,7 +94,7 @@ sub fetch(){
 	my $ed_text = "$ed[2] " . Date::Calc::Month_to_Text($ed[1]);
 	my @now = Date::Calc::Today();
 	my $period_days = Date::Calc::Delta_Days(@sd, @ed);
-	my $elapsed_days = Date::Calc::Delta_Days(@sd, @now);
+	my $elapsed_days = Date::Calc::Delta_Days(@sd, @now) + 1; # include both ends
 
 	my $remaining_usage = $quota - $usage;
 	my $remaining_days = $period_days - $elapsed_days;
@@ -109,7 +109,7 @@ sub fetch(){
 	my $elapsed_pc = $elapsed_days * 100 / $period_days;
 
 #format
-	my $usage_str = "$usage GB / $quota GB";
+	my $usage_str = sprintf "%.2f GB / $quota GB", $usage;
 	my $elapsed_str = "$elapsed_days / $period_days";
 
 	my $rollover_str = "Rollover in $remaining_days days on $ed_text";
