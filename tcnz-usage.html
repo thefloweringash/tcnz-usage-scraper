@@ -1,0 +1,88 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Traffic</title>
+
+		<!-- 1. Add these JavaScript inclusions in the head of your page -->
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+		<script type="text/javascript" src="./js/highcharts.js"></script>
+
+		<!-- 2. Add the JavaScript to initialize the chart on document ready -->
+		<script type="text/javascript">
+
+var data = 0;
+var ready = true;
+// first fetch static page
+jQuery.getJSON('tcnz_cache.js', function(d){ data = d; displayChart('cachecontainer'); });
+
+// then the CGI -
+jQuery.getJSON('/cgi-bin/telstraclear-usage.pl', function(d){ data = d; $('#cachecontainer').hide(); displayChart('livecontainer'); });
+
+var chart;
+function displayChart(target){
+	if(!ready || data == 0) return;
+
+	chart = new Highcharts.Chart({
+		chart: {
+			animation: false,
+			renderTo: target,
+			defaultSeriesType: 'bar'
+		},
+		credits: { enabled: false },
+			<!-- colors: [ '#AA4643', '#4572A7' ], -->
+			title: {
+				text: data.plan
+			},
+		xAxis: {
+			categories: ['Data used', 'Time used']
+		},
+		yAxis: {
+			min: 0,
+			max: (data.usage_pc > 100 ? data.usage_pc : 100),
+			title: {
+				text: null
+			},
+			labels: {
+				formatter: function() { return this.value + "%"; }
+			}
+		},
+		legend: {
+			enabled: true,
+			backgroundColor: '#FFFFFF',
+			symbolWidth: 0
+		},
+		tooltip: {
+			formatter: function() { return this.x + ": " + this.point.name + " (" + this.y + "%)"; }
+		},
+		plotOptions: {
+			bar: {
+				animation: false,
+				dataLabels: { enabled: true,
+							  align: 'right',
+							  color: '#ffffff',
+							  x: -10,
+							  formatter: function(){ return this.point.name + " (" + this.y + "%)"; }
+							}
+			}
+		},
+		series: [ {
+			name: data.remaining_text + "<br/>" + data.daily_usage_text + "<br/>" + data.rollover_text,
+			data: [{name: data.usage_text, y: data.usage_pc, color : (data.usage_pc > 100 ? '#AA4643' : '#4572A7')},
+				   {name: data.time_text,  y: data.time_pc}]
+		}]
+	});
+}
+
+
+</script>
+
+	</head>
+	<body>
+
+		<!-- 3. Add the container -->
+		<div id="cachecontainer" style="width: 800px; height: 400px; margin: 0 auto"><center>Loading...</center></div>
+		<div id="livecontainer" style="width: 800px; height: 400px; margin: 0 auto"><center>(Cached data displayed - updating, please wait)</center></div>
+
+	</body>
+</html>
