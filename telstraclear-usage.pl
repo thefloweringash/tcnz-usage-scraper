@@ -20,6 +20,35 @@ my $password = "";
 my $json_data_file = "";
 my $cache_max_age = 5*60;
 
+# This code is rather hacky and special-case-y. I argue this is
+# acceptable as it will likely have to be rewritten whenever upstream
+# makes changes.
+sub scrape_tcnz_js($) {
+	my ($data) = @_;
+	my $services = [];
+	my $service;
+	my $serviceUsage = [];
+
+	for (split /^/, $data) {
+		if (/service = new Array\(\)/) {
+			$service = [];
+			push @$services, $service;
+		}
+		elsif (/service\[(\d+)\] = "?(.*?)"?\;/ && $2 ne "serviceUsages") {
+			$service->[$1] = $2;
+		}
+		elsif (/serviceUsage\[(\d+)\] = "?(.*?)"?\;/) {
+			$serviceUsage->[$1] = $2;
+		}
+		elsif (/service\[(\d+)\].push\(serviceUsage\)/) {
+			push @{$service->[$1]}, $serviceUsage;
+			$serviceUsage = [];
+		}
+	}
+
+	return $services;
+}
+
 sub fetch(){
 	my $ua = LWP::UserAgent->new;
 	$ua->timeout(20);
@@ -67,10 +96,11 @@ sub fetch(){
 
 #parse and print specific usage data
 
-	my $tree = HTML::TreeBuilder::XPath->new_from_content($response->decoded_content);
-	my $currentRow = $tree->findnodes(q{//tr[td[@class='usg_menuCurrent']]})->[0];
+	my $data = scrape_tcnz_js($response->decoded_content);
+	my $plan_data = $data->[0];
+	my $current_month_data = $plan_data->[6]->[0];
 
-	my $usage = $currentRow->findvalue(q{td[5]/nobr/text()});
+	my $usage = $current_month_data->[4];
 # Make numeric and normalize
 	if($usage =~ m/MB/){
 		$usage /= 1024.0;
@@ -79,18 +109,18 @@ sub fetch(){
 		$usage *= 1.0;
 	}
 
-	my $plan = $currentRow->findvalue(q{td[2]/text()});
+	my $plan = $plan_data->[2];
 	$plan =~ s/ *(.*)/$1/;
 	$plan =~ m/([0-9]+)G/;
 	my $quota = $1;
 
-	my $period     = $currentRow->findvalue(q{td[4]/nobr/a/text()});
-	$period =~ s/ -.*//;
-	$period =~ s/([0-9]+) ([A-z]+)/$2 $1/; # Date::Calc parses MDY
+	$current_month_data->[3] =~ m/(.*) - (.*)/;
+	my $period_start = $1;
+	my $period_end = $2;
 
 	use Date::Calc;
-	my @sd = Date::Calc::Parse_Date($period);
-	my @ed = Date::Calc::Add_Delta_YMD(@sd, 0, 1, -1); # If we fetched the next page, we would be able to get an accurate end date rather than assuming +1 month.
+	my @sd = Date::Calc::Decode_Date_EU($period_start);
+	my @ed = Date::Calc::Decode_Date_EU($period_end);
 	my $ed_text = "$ed[2] " . Date::Calc::Month_to_Text($ed[1]);
 	my @now = Date::Calc::Today();
 	my $period_days = Date::Calc::Delta_Days(@sd, @ed);
