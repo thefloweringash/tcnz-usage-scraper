@@ -1,4 +1,5 @@
 #!/usr/bin/perl -I$HOME/perl5/lib/perl5
+# -*- mode: perl; tab-width: 4; indent-tabs-mode: t -*-
 
 # TCNZ usage fetcher
 # Chris Andreae <chris (at) andreae.gen.nz>
