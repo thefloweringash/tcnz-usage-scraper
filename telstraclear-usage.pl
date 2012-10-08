@@ -157,9 +157,9 @@ sub fetch(){
 
 
 	my $export = { plan 	  		=> $plan,
-				   usage_pc   		=> sprintf("%.1f", $usage_pc),
+				   usage_pc   		=> sprintf("%.1f", $usage_pc) * 1.0,
 				   usage_text 		=> $usage_str,
-				   time_pc 	  		=> sprintf("%.1f", $elapsed_pc),
+				   time_pc 	  		=> sprintf("%.1f", $elapsed_pc) * 1.0,
 				   time_text  		=> "$elapsed_str days",
 				   remaining_text 	=> $remaining_str,
 				   daily_usage_text => $daily_usage_str,
