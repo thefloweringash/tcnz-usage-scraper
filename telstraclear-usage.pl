@@ -121,7 +121,9 @@ sub fetch(){
 
 	use Date::Calc;
 	my @sd = Date::Calc::Decode_Date_EU($period_start);
-	my @ed = Date::Calc::Decode_Date_EU($period_end);
+	my @ed = Date::Calc::Add_Delta_Days(
+		Date::Calc::Decode_Date_EU($period_end),
+		1);
 	my $ed_text = "$ed[2] " . Date::Calc::Month_to_Text($ed[1]);
 	my @now = Date::Calc::Today();
 	my $period_days = Date::Calc::Delta_Days(@sd, @ed);
